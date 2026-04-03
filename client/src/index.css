@@ -1,0 +1,134 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --button-outline: rgba(0,0,0, .10);
+  --badge-outline: rgba(0,0,0, .05);
+  --opaque-button-border-intensity: -8;
+  --elevate-1: rgba(0,0,0, .03);
+  --elevate-2: rgba(0,0,0, .08);
+  --background: 160 10% 97%;
+  --foreground: 183 23% 14%;
+  --border: 160 5% 88%;
+  --card: 160 10% 98%;
+  --card-foreground: 183 23% 14%;
+  --card-border: 160 5% 92%;
+  --sidebar: 183 70% 12%;
+  --sidebar-foreground: 160 10% 95%;
+  --sidebar-border: 183 50% 16%;
+  --sidebar-primary: 160 60% 50%;
+  --sidebar-primary-foreground: 0 0% 100%;
+  --sidebar-accent: 183 50% 18%;
+  --sidebar-accent-foreground: 160 10% 95%;
+  --sidebar-ring: 183 98% 22%;
+  --popover: 160 8% 96%;
+  --popover-foreground: 183 23% 14%;
+  --popover-border: 160 5% 88%;
+  --primary: 183 98% 22%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 160 8% 92%;
+  --secondary-foreground: 183 23% 14%;
+  --muted: 160 8% 93%;
+  --muted-foreground: 160 5% 42%;
+  --accent: 160 10% 92%;
+  --accent-foreground: 183 23% 14%;
+  --destructive: 0 84% 42%;
+  --destructive-foreground: 0 0% 98%;
+  --input: 160 5% 78%;
+  --ring: 183 98% 22%;
+  --chart-1: 183 98% 22%;
+  --chart-2: 160 60% 40%;
+  --chart-3: 40 80% 50%;
+  --chart-4: 270 50% 50%;
+  --chart-5: 10 70% 50%;
+  --font-sans: 'Plus Jakarta Sans', sans-serif;
+  --font-serif: Georgia, serif;
+  --font-mono: Menlo, monospace;
+  --radius: .5rem;
+  --shadow-2xs: 0 1px 2px hsl(183 20% 20% / 0.04);
+  --shadow-xs: 0 1px 3px hsl(183 20% 20% / 0.06);
+  --shadow-sm: 0 2px 4px hsl(183 20% 20% / 0.06);
+  --shadow: 0 2px 8px hsl(183 20% 20% / 0.08);
+  --shadow-md: 0 4px 12px hsl(183 20% 20% / 0.08);
+  --shadow-lg: 0 8px 24px hsl(183 20% 20% / 0.10);
+  --shadow-xl: 0 12px 32px hsl(183 20% 20% / 0.12);
+  --shadow-2xl: 0 16px 48px hsl(183 20% 20% / 0.14);
+  --tracking-normal: 0em;
+  --spacing: 0.25rem;
+
+  --sidebar-primary-border: hsl(var(--sidebar-primary));
+  --sidebar-accent-border: hsl(var(--sidebar-accent));
+  --primary-border: hsl(var(--primary));
+  --secondary-border: hsl(var(--secondary));
+  --muted-border: hsl(var(--muted));
+  --accent-border: hsl(var(--accent));
+  --destructive-border: hsl(var(--destructive));
+}
+
+.dark {
+  --button-outline: rgba(255,255,255, .10);
+  --badge-outline: rgba(255,255,255, .05);
+  --opaque-button-border-intensity: 9;
+  --elevate-1: rgba(255,255,255, .04);
+  --elevate-2: rgba(255,255,255, .09);
+  --background: 183 15% 7%;
+  --foreground: 160 10% 92%;
+  --border: 183 8% 18%;
+  --card: 183 12% 10%;
+  --card-foreground: 160 10% 92%;
+  --card-border: 183 8% 14%;
+  --sidebar: 183 20% 8%;
+  --sidebar-foreground: 160 10% 92%;
+  --sidebar-border: 183 15% 14%;
+  --sidebar-primary: 183 45% 50%;
+  --sidebar-primary-foreground: 0 0% 100%;
+  --sidebar-accent: 183 20% 14%;
+  --sidebar-accent-foreground: 160 10% 92%;
+  --sidebar-ring: 183 45% 45%;
+  --popover: 183 10% 12%;
+  --popover-foreground: 160 10% 92%;
+  --popover-border: 183 8% 18%;
+  --primary: 183 45% 45%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 183 10% 16%;
+  --secondary-foreground: 160 10% 92%;
+  --muted: 183 10% 16%;
+  --muted-foreground: 160 5% 55%;
+  --accent: 183 12% 15%;
+  --accent-foreground: 160 10% 92%;
+  --destructive: 0 70% 50%;
+  --destructive-foreground: 0 0% 98%;
+  --input: 183 8% 25%;
+  --ring: 183 45% 45%;
+  --chart-1: 183 45% 50%;
+  --chart-2: 160 45% 55%;
+  --chart-3: 40 65% 60%;
+  --chart-4: 270 40% 60%;
+  --chart-5: 10 60% 60%;
+  --shadow-2xs: 0 1px 2px hsl(0 0% 0% / 0.15);
+  --shadow-xs: 0 1px 3px hsl(0 0% 0% / 0.2);
+  --shadow-sm: 0 2px 4px hsl(0 0% 0% / 0.2);
+  --shadow: 0 2px 8px hsl(0 0% 0% / 0.25);
+  --shadow-md: 0 4px 12px hsl(0 0% 0% / 0.25);
+  --shadow-lg: 0 8px 24px hsl(0 0% 0% / 0.3);
+  --shadow-xl: 0 12px 32px hsl(0 0% 0% / 0.3);
+  --shadow-2xl: 0 16px 48px hsl(0 0% 0% / 0.35);
+
+  --sidebar-primary-border: hsl(var(--sidebar-primary));
+  --sidebar-accent-border: hsl(var(--sidebar-accent));
+  --primary-border: hsl(var(--primary));
+  --secondary-border: hsl(var(--secondary));
+  --muted-border: hsl(var(--muted));
+  --accent-border: hsl(var(--accent));
+  --destructive-border: hsl(var(--destructive));
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply font-sans antialiased bg-background text-foreground;
+  }
+}
