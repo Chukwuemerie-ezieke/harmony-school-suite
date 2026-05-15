@@ -38,12 +38,19 @@ function requireRole(...roles: string[]) {
 
 export async function registerRoutes(httpServer: Server, app: Express): Promise<Server> {
   // Session
+  const isProd = process.env.NODE_ENV === "production";
   app.use(session({
-    secret: "harmony-school-suite-secret-key-2026",
+    secret: process.env.SESSION_SECRET || "harmony-school-suite-secret-key-2026",
     resave: false,
     saveUninitialized: false,
     store: new SessionStore({ checkPeriod: 86400000 }),
-    cookie: { maxAge: 86400000 },
+    proxy: true,
+    cookie: {
+      maxAge: 86400000,
+      secure: isProd,
+      sameSite: isProd ? "none" : "lax",
+      httpOnly: true,
+    },
   }));
 
   // Passport
