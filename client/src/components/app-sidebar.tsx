@@ -5,7 +5,7 @@ import {
   Calendar, BookOpen, School, MessageSquare, FolderOpen,
   Megaphone, Mail, CalendarDays, Package, Layers, Wrench,
   Settings, Users, CreditCard, ChevronDown, LogOut, Moon, Sun,
-  Menu
+  Menu, ClipboardList, Compass, FileText, BookOpenCheck, ExternalLink
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
@@ -46,6 +46,15 @@ const navGroups = [
       { label: "All Assets", path: "/assets", icon: Package },
       { label: "Categories", path: "/asset-categories", icon: Layers },
       { label: "Maintenance", path: "/maintenance", icon: Wrench },
+    ]
+  },
+  {
+    label: "More Modules", items: [
+      { label: "EduPlanner", path: "https://chukwuemerie-ezieke.github.io/eduplanner/", icon: ClipboardList, external: true },
+      { label: "Career Guidance", path: "https://harmony-career-guidance.vercel.app", icon: Compass, external: true },
+      { label: "Student Records", path: "#", icon: FileText, soon: true },
+      { label: "Harmony CBT", path: "#", icon: GraduationCap, soon: true },
+      { label: "ExamPrep", path: "#", icon: BookOpenCheck, soon: true },
     ]
   },
   {
@@ -135,9 +144,29 @@ export function AppSidebar({ collapsed, onToggle }: { collapsed: boolean; onTogg
                 </div>
               </CollapsibleTrigger>
               <CollapsibleContent>
-                {group.items.map((item) => {
+                {group.items.map((item: any) => {
                   const Icon = item.icon;
                   const active = location === item.path;
+                  if (item.external) {
+                    return (
+                      <a key={item.path} href={item.path} target="_blank" rel="noopener noreferrer">
+                        <div className="flex items-center gap-3 px-4 py-1.5 mx-2 rounded-md cursor-pointer text-sm transition-colors text-white/70 hover:bg-white/10 hover:text-white" data-testid={`nav-${item.label.toLowerCase().replace(/\s/g, "-")}`}>
+                          <Icon className="w-4 h-4 flex-shrink-0" />
+                          <span className="flex-1">{item.label}</span>
+                          <ExternalLink className="w-3 h-3 opacity-50" />
+                        </div>
+                      </a>
+                    );
+                  }
+                  if (item.soon) {
+                    return (
+                      <div key={item.label} className="flex items-center gap-3 px-4 py-1.5 mx-2 rounded-md text-sm text-white/40 cursor-not-allowed" data-testid={`nav-${item.label.toLowerCase().replace(/\s/g, "-")}`}>
+                        <Icon className="w-4 h-4 flex-shrink-0" />
+                        <span className="flex-1">{item.label}</span>
+                        <span className="text-[10px] uppercase tracking-wider">Soon</span>
+                      </div>
+                    );
+                  }
                   return (
                     <Link key={item.path} href={item.path}>
                       <div className={`flex items-center gap-3 px-4 py-1.5 mx-2 rounded-md cursor-pointer text-sm transition-colors ${active ? "bg-white/15 text-white font-medium" : "text-white/70 hover:bg-white/10 hover:text-white"}`} data-testid={`nav-${item.label.toLowerCase().replace(/\s/g, "-")}`}>

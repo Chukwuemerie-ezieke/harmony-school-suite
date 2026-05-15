@@ -2,8 +2,9 @@ import { useQuery } from "@tanstack/react-query";
 import { AppLayout } from "@/components/app-layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth } from "@/lib/auth";
-import { GraduationCap, Users, MessageSquare, Package, Megaphone, CalendarDays, Loader2 } from "lucide-react";
+import { GraduationCap, Users, MessageSquare, Package, Megaphone, CalendarDays, Loader2, FileText, GraduationCap as GradCap, ClipboardList, Compass, BookOpenCheck, ExternalLink, Clock } from "lucide-react";
 import { Link } from "wouter";
+import { Badge } from "@/components/ui/badge";
 
 export default function DashboardPage() {
   const { user } = useAuth();
@@ -92,6 +93,47 @@ export default function DashboardPage() {
               ))}
             </CardContent>
           </Card>
+        </div>
+
+        <div>
+          <div className="flex items-baseline justify-between mb-3 mt-2">
+            <h2 className="text-base font-semibold">More Modules</h2>
+            <span className="text-xs text-muted-foreground">Expanded suite — premium tier</span>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {[
+              { label: "EduPlanner", desc: "Role-based educator task planner", icon: ClipboardList, color: "text-indigo-600 dark:text-indigo-400", bg: "bg-indigo-50 dark:bg-indigo-950", href: "https://chukwuemerie-ezieke.github.io/eduplanner/", live: true },
+              { label: "Career Guidance", desc: "SS3 university & JAMB recommendations", icon: Compass, color: "text-teal-600 dark:text-teal-400", bg: "bg-teal-50 dark:bg-teal-950", href: "https://harmony-career-guidance.vercel.app", live: true },
+              { label: "Student Records", desc: "Full digital student registry", icon: FileText, color: "text-slate-600 dark:text-slate-400", bg: "bg-slate-100 dark:bg-slate-800", live: false },
+              { label: "Harmony CBT", desc: "Computer-based testing platform", icon: GradCap, color: "text-slate-600 dark:text-slate-400", bg: "bg-slate-100 dark:bg-slate-800", live: false },
+              { label: "ExamPrep", desc: "WAEC, NECO & JAMB preparation", icon: BookOpenCheck, color: "text-slate-600 dark:text-slate-400", bg: "bg-slate-100 dark:bg-slate-800", live: false },
+            ].map((m) => {
+              const Icon = m.icon;
+              const inner = (
+                <Card className={`${m.live ? "cursor-pointer hover:shadow-md" : "opacity-70"} transition-shadow h-full`} data-testid={`more-module-${m.label.toLowerCase().replace(/\s/g, "-")}`}>
+                  <CardContent className="p-5">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className={`w-10 h-10 rounded-lg ${m.bg} flex items-center justify-center flex-shrink-0`}>
+                        <Icon className={`w-5 h-5 ${m.color}`} />
+                      </div>
+                      {m.live ? (
+                        <Badge variant="secondary" className="gap-1 text-xs"><ExternalLink className="w-3 h-3" />Live</Badge>
+                      ) : (
+                        <Badge variant="outline" className="gap-1 text-xs"><Clock className="w-3 h-3" />Soon</Badge>
+                      )}
+                    </div>
+                    <p className="text-sm font-semibold mt-3">{m.label}</p>
+                    <p className="text-xs text-muted-foreground mt-1">{m.desc}</p>
+                  </CardContent>
+                </Card>
+              );
+              return m.live ? (
+                <a key={m.label} href={m.href} target="_blank" rel="noopener noreferrer" className="block">{inner}</a>
+              ) : (
+                <div key={m.label}>{inner}</div>
+              );
+            })}
+          </div>
         </div>
       </div>
     </AppLayout>
