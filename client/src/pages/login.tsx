@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Link } from "wouter";
 import { useAuth } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -71,6 +72,10 @@ export default function LoginPage() {
                 {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
                 Sign In
               </Button>
+              <div className="flex justify-between text-xs">
+                <Link href="/forgot-password" className="text-primary hover:underline" data-testid="link-forgot-password">Forgot password?</Link>
+                <Link href="/signup" className="text-primary hover:underline" data-testid="link-signup">Create school account</Link>
+              </div>
             </form>
 
             <div className="relative my-4">

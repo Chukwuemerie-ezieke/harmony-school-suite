@@ -22,6 +22,12 @@ function verifyPassword(password: string, stored: string): boolean {
   return hash === computed;
 }
 
+function sendEmail(to: string | null | undefined, subject: string, body: string) {
+  if (!to) return;
+  // TODO: Wire Zoho Mail via zoho_mail__pipedream connector after frontend is verified.
+  console.log("[email stub]", { to, subject, preview: body.slice(0, 120) });
+}
+
 function requireAuth(req: Request, res: Response, next: NextFunction) {
   if (req.isAuthenticated()) return next();
   res.status(401).json({ message: "Unauthorized" });
@@ -95,6 +101,66 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     const { password, ...safe } = user;
     const school = user.schoolId ? await storage.getSchool(user.schoolId) : null;
     res.json({ ...safe, school });
+  });
+
+  // ── School Signup (public) ──
+  app.post("/api/auth/signup", async (req, res) => {
+    try {
+      const { schoolName, schoolEmail, schoolPhone, state, lga, adminUsername, adminFullName, adminEmail, adminPassword } = req.body;
+      if (!schoolName || !adminUsername || !adminPassword || !adminFullName) return res.status(400).json({ message: "Missing required fields" });
+      if (adminPassword.length < 8) return res.status(400).json({ message: "Password must be at least 8 characters" });
+      const existingUser = await storage.getUserByUsername(adminUsername);
+      if (existingUser) return res.status(409).json({ message: "Username already taken" });
+      const code = schoolName.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 6) + "-" + Math.random().toString(36).slice(2, 6).toUpperCase();
+      const school = await storage.createSchool({
+        name: schoolName, code, email: schoolEmail || null, phone: schoolPhone || null,
+        state: state || null, lga: lga || null, subscriptionPlan: "trial", subscriptionStatus: "trialing",
+      } as any);
+      const admin = await storage.createUser({
+        schoolId: school.id, username: adminUsername, password: hashPassword(adminPassword),
+        email: adminEmail || null, fullName: adminFullName, role: "school_admin",
+      } as any);
+      sendEmail(adminEmail, `Welcome to Harmony School Suite - ${schoolName}`, `Hi ${adminFullName},\n\nYour school '${schoolName}' is set up.\n\nLogin: https://harmony-school-suite.vercel.app\nUsername: ${adminUsername}\nSchool code: ${code}\n\nThanks,\nHarmony Digital Consults`);
+      const { password, ...safe } = admin;
+      req.login(admin, () => res.json({ user: safe, school }));
+    } catch (err: any) {
+      console.error("signup error:", err);
+      res.status(500).json({ message: err?.message || "Signup failed" });
+    }
+  });
+
+  // ── Password reset ──
+  app.post("/api/auth/forgot-password", async (req, res) => {
+    const { email } = req.body;
+    if (!email) return res.status(400).json({ message: "Email required" });
+    const user = await storage.getUserByEmail(email);
+    // Always respond OK to prevent email enumeration
+    if (user) {
+      const token = crypto.randomBytes(32).toString("hex");
+      const expiresAt = new Date(Date.now() + 60 * 60 * 1000);
+      await storage.createResetToken(user.id, token, expiresAt);
+      const resetUrl = `https://harmony-school-suite.vercel.app/#/reset/${token}`;
+      sendEmail(email, "Reset your Harmony School Suite password", `Hi ${user.fullName},\n\nClick this link within 1 hour to reset your password:\n${resetUrl}\n\nIf you didn't request this, ignore this email.`);
+    }
+    res.json({ ok: true, message: "If that email exists, a reset link was sent." });
+  });
+
+  app.post("/api/auth/reset-password", async (req, res) => {
+    const { token, newPassword } = req.body;
+    if (!token || !newPassword || newPassword.length < 8) return res.status(400).json({ message: "Token and password (min 8 chars) required" });
+    const rec = await storage.getResetToken(token);
+    if (!rec || rec.usedAt || new Date(rec.expiresAt) < new Date()) return res.status(400).json({ message: "Invalid or expired token" });
+    await storage.updateUser(rec.userId, { password: hashPassword(newPassword) } as any);
+    await storage.markResetTokenUsed(rec.id);
+    res.json({ ok: true });
+  });
+
+  // ── Super Admin ──
+  app.get("/api/super-admin/schools", requireRole("super_admin"), async (_req, res) => {
+    res.json(await storage.listAllSchools());
+  });
+  app.patch("/api/super-admin/schools/:id", requireRole("super_admin"), async (req, res) => {
+    res.json(await storage.updateSchool(Number(req.params.id), req.body));
   });
 
   // ── Demo Seed ──

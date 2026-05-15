@@ -7,6 +7,10 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider, useAuth } from "@/lib/auth";
 import NotFound from "@/pages/not-found";
 import LoginPage from "@/pages/login";
+import SignupPage from "@/pages/signup";
+import ForgotPasswordPage from "@/pages/forgot-password";
+import ResetPasswordPage from "@/pages/reset-password";
+import SuperAdminPage from "@/pages/super-admin";
 import DashboardPage from "@/pages/dashboard";
 import StudentsPage from "@/pages/students";
 import StudentProfilePage from "@/pages/student-profile";
@@ -38,11 +42,21 @@ function AppRouter() {
     );
   }
 
-  if (!user) return <LoginPage />;
+  if (!user) {
+    return (
+      <Switch>
+        <Route path="/signup" component={SignupPage} />
+        <Route path="/forgot-password" component={ForgotPasswordPage} />
+        <Route path="/reset/:token" component={ResetPasswordPage} />
+        <Route component={LoginPage} />
+      </Switch>
+    );
+  }
 
   return (
     <Switch>
       <Route path="/" component={DashboardPage} />
+      <Route path="/super-admin" component={SuperAdminPage} />
       <Route path="/students" component={StudentsPage} />
       <Route path="/students/:id" component={StudentProfilePage} />
       <Route path="/attendance" component={AttendancePage} />

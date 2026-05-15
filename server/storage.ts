@@ -18,6 +18,7 @@ import {
   type AssetCategory, type InsertAssetCategory, assetCategories,
   type Asset, type InsertAsset, assets,
   type MaintenanceLog, type InsertMaintenanceLog, assetMaintenanceLogs,
+  passwordResetTokens, type PasswordResetToken,
 } from "../shared/schema";
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
@@ -286,6 +287,23 @@ export class DatabaseStorage {
       announcementCount: Number(an?.count ?? 0),
       eventCount: Number(e?.count ?? 0),
     };
+  }
+
+  // ── Password reset ──
+  async createResetToken(userId: number, token: string, expiresAt: Date): Promise<void> {
+    await db.insert(passwordResetTokens).values({ userId, token, expiresAt });
+  }
+  async getResetToken(token: string): Promise<PasswordResetToken | undefined> {
+    return first(await db.select().from(passwordResetTokens).where(eq(passwordResetTokens.token, token)));
+  }
+  async markResetTokenUsed(id: number): Promise<void> {
+    await db.update(passwordResetTokens).set({ usedAt: new Date() }).where(eq(passwordResetTokens.id, id));
+  }
+  async getUserByEmail(email: string): Promise<User | undefined> {
+    return first(await db.select().from(users).where(eq(users.email, email)));
+  }
+  async listAllSchools(): Promise<School[]> {
+    return await db.select().from(schools).orderBy(desc(schools.createdAt));
   }
 }
 
