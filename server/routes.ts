@@ -28,7 +28,7 @@ function requireAuth(req: Request, res: Response, next: NextFunction) {
 }
 
 function requireRole(...roles: string[]) {
-  return (req: Request, res: Response, next: NextFunction) => {
+  return async (req: Request, res: Response, next: NextFunction) => {
     if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
     const user = req.user as any;
     if (!roles.includes(user.role)) return res.status(403).json({ message: "Forbidden" });
@@ -51,7 +51,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
   app.use(passport.session());
 
   passport.use(new LocalStrategy(async (username, password, done) => {
-    const user = storage.getUserByUsername(username);
+    const user = await storage.getUserByUsername(username);
     if (!user) return done(null, false, { message: "Invalid credentials" });
     if (!verifyPassword(password, user.password)) return done(null, false, { message: "Invalid credentials" });
     if (!user.isActive) return done(null, false, { message: "Account disabled" });
@@ -59,48 +59,48 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
   }));
 
   passport.serializeUser((user: any, done) => done(null, user.id));
-  passport.deserializeUser((id: number, done) => {
-    const user = storage.getUser(id);
+  passport.deserializeUser(async (id: number, done) => {
+    const user = await storage.getUser(id);
     done(null, user || null);
   });
 
   // ── Auth Routes ──
-  app.post("/api/auth/login", (req, res, next) => {
-    passport.authenticate("local", (err: any, user: any, info: any) => {
+  app.post("/api/auth/login", async (req, res, next) => {
+    passport.authenticate("local", async (err: any, user: any, info: any) => {
       if (err) return next(err);
       if (!user) return res.status(401).json({ message: info?.message || "Invalid credentials" });
-      req.logIn(user, (err) => {
+      req.logIn(user, async (err) => {
         if (err) return next(err);
-        storage.updateUser(user.id, { lastLogin: new Date().toISOString() } as any);
+        await storage.updateUser(user.id, { lastLogin: new Date() } as any);
         const { password, ...safe } = user;
         res.json(safe);
       });
     })(req, res, next);
   });
 
-  app.post("/api/auth/logout", (req, res) => {
+  app.post("/api/auth/logout", async (req, res) => {
     req.logout(() => res.json({ ok: true }));
   });
 
-  app.get("/api/auth/me", (req, res) => {
+  app.get("/api/auth/me", async (req, res) => {
     if (!req.isAuthenticated()) return res.status(401).json({ message: "Not authenticated" });
     const user = req.user as any;
     const { password, ...safe } = user;
-    const school = user.schoolId ? storage.getSchool(user.schoolId) : null;
+    const school = user.schoolId ? await storage.getSchool(user.schoolId) : null;
     res.json({ ...safe, school });
   });
 
   // ── Demo Seed ──
   app.post("/api/school/demo", async (_req, res) => {
-    const existing = storage.getSchoolByCode("DEMO-INCUSA");
+    const existing = await storage.getSchoolByCode("DEMO-INCUSA");
     if (existing) {
-      const admin = storage.getUserByUsername("admin");
+      const admin = await storage.getUserByUsername("admin");
       if (admin) {
         const { password, ...safe } = admin;
         return res.json({ message: "Demo already loaded", user: safe, school: existing });
       }
     }
-    const school = storage.createSchool({
+    const school = await storage.createSchool({
       name: "The Incubators Secondary Academy",
       code: "DEMO-INCUSA",
       address: "Ufuma, Anambra State",
@@ -116,15 +116,15 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     const sid = school.id;
 
     // Users
-    const adminUser = storage.createUser({ schoolId: sid, username: "admin", password: hashPassword("admin123"), email: "admin@incusa.edu.ng", fullName: "Admin User", role: "school_admin" });
-    storage.createUser({ schoolId: sid, username: "teacher", password: hashPassword("teacher123"), email: "teacher@incusa.edu.ng", fullName: "Mrs. Okafor", role: "teacher" });
-    storage.createUser({ schoolId: sid, username: "parent", password: hashPassword("parent123"), email: "parent@incusa.edu.ng", fullName: "Mr. Nwosu", role: "parent" });
+    const adminUser = await storage.createUser({ schoolId: sid, username: "admin", password: hashPassword("admin123"), email: "admin@incusa.edu.ng", fullName: "Admin User", role: "school_admin" });
+    await storage.createUser({ schoolId: sid, username: "teacher", password: hashPassword("teacher123"), email: "teacher@incusa.edu.ng", fullName: "Mrs. Okafor", role: "teacher" });
+    await storage.createUser({ schoolId: sid, username: "parent", password: hashPassword("parent123"), email: "parent@incusa.edu.ng", fullName: "Mr. Nwosu", role: "parent" });
 
     // Classes
     const classNames = ["JSS1A", "JSS2A", "JSS3A", "SS1A", "SS2A", "SS3A"];
     const classMap: Record<string, number> = {};
     for (const cn of classNames) {
-      const c = storage.createClass({ schoolId: sid, name: cn, level: cn.substring(0, 3), section: "A" });
+      const c = await storage.createClass({ schoolId: sid, name: cn, level: cn.substring(0, 3), section: "A" });
       classMap[cn] = c.id;
     }
 
@@ -145,7 +145,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     ];
     const subjectMap: Record<string, number> = {};
     for (const s of subjectData) {
-      const sub = storage.createSubject({ schoolId: sid, name: s.name, code: s.code, colorCode: s.colorCode });
+      const sub = await storage.createSubject({ schoolId: sid, name: s.name, code: s.code, colorCode: s.colorCode });
       subjectMap[s.code] = sub.id;
     }
 
@@ -163,7 +163,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
 
     for (let i = 0; i < 30; i++) {
       const cl = classLevels[i % 6];
-      storage.createStudent({
+      await storage.createStudent({
         schoolId: sid,
         admissionNumber: `INCUSA/${2024}/${String(i + 1).padStart(3, "0")}`,
         firstName: firstNames[i],
@@ -179,13 +179,13 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     }
 
     // Attendance for last 3 days
-    const allStudents = storage.getStudentsBySchool(sid);
+    const allStudents = await storage.getStudentsBySchool(sid);
     for (let d = 0; d < 3; d++) {
       const date = new Date();
       date.setDate(date.getDate() - d);
       const dateStr = date.toISOString().split("T")[0];
       for (const s of allStudents.slice(0, 15)) {
-        storage.createAttendance({
+        await storage.createAttendance({
           schoolId: sid, studentId: s.id, date: dateStr,
           status: Math.random() > 0.15 ? "present" : "absent",
           markedBy: adminUser.id,
@@ -194,14 +194,14 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     }
 
     // Visits
-    storage.createVisit({ schoolId: sid, visitorName: "Mrs. Adaeze Okafor", visitorPhone: "08034567890", purpose: "PTA Meeting", personVisited: "Principal", checkIn: new Date().toISOString() });
-    storage.createVisit({ schoolId: sid, visitorName: "Mr. Samuel Ibe", visitorPhone: "08098765432", purpose: "Student Pickup", personVisited: "Class Teacher JSS2", checkIn: new Date().toISOString(), checkOut: new Date().toISOString() });
+    await storage.createVisit({ schoolId: sid, visitorName: "Mrs. Adaeze Okafor", visitorPhone: "08034567890", purpose: "PTA Meeting", personVisited: "Principal", checkIn: new Date().toISOString() });
+    await storage.createVisit({ schoolId: sid, visitorName: "Mr. Samuel Ibe", visitorPhone: "08098765432", purpose: "Student Pickup", personVisited: "Class Teacher JSS2", checkIn: new Date().toISOString(), checkOut: new Date().toISOString() });
 
     // Feedback categories
     const fbCats = ["Academic", "Facilities", "Safety", "General", "Staff"];
     const fbCatMap: Record<string, number> = {};
     for (const fc of fbCats) {
-      const cat = storage.createFeedbackCategory({ schoolId: sid, name: fc, description: `${fc} related feedback` });
+      const cat = await storage.createFeedbackCategory({ schoolId: sid, name: fc, description: `${fc} related feedback` });
       fbCatMap[fc] = cat.id;
     }
 
@@ -215,7 +215,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     ];
     for (let i = 0; i < feedbackData.length; i++) {
       const fd = feedbackData[i];
-      storage.createFeedback({
+      await storage.createFeedback({
         schoolId: sid,
         trackingCode: `VB-${String(1000 + i)}`,
         categoryId: fbCatMap[fd.cat],
@@ -227,22 +227,22 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     }
 
     // Announcements
-    storage.createAnnouncement({ schoolId: sid, title: "Welcome Back - Second Term 2026", content: "We welcome all students back for the second term. Classes resume Monday.", targetAudience: "all", priority: "important", publishedBy: adminUser.id, isPublished: true });
-    storage.createAnnouncement({ schoolId: sid, title: "PTA Meeting Notice", content: "PTA meeting scheduled for Friday. All parents are expected to attend.", targetAudience: "all", priority: "normal", publishedBy: adminUser.id, isPublished: true });
-    storage.createAnnouncement({ schoolId: sid, title: "Inter-House Sports", content: "Annual inter-house sports competition will hold next month. Students should prepare.", targetAudience: "all", priority: "normal", publishedBy: adminUser.id, isPublished: true });
+    await storage.createAnnouncement({ schoolId: sid, title: "Welcome Back - Second Term 2026", content: "We welcome all students back for the second term. Classes resume Monday.", targetAudience: "all", priority: "important", publishedBy: adminUser.id, isPublished: true });
+    await storage.createAnnouncement({ schoolId: sid, title: "PTA Meeting Notice", content: "PTA meeting scheduled for Friday. All parents are expected to attend.", targetAudience: "all", priority: "normal", publishedBy: adminUser.id, isPublished: true });
+    await storage.createAnnouncement({ schoolId: sid, title: "Inter-House Sports", content: "Annual inter-house sports competition will hold next month. Students should prepare.", targetAudience: "all", priority: "normal", publishedBy: adminUser.id, isPublished: true });
 
     // Events
-    storage.createEvent({ schoolId: sid, title: "PTA Meeting", description: "General PTA meeting for all parents", eventDate: "2026-04-10", eventTime: "10:00", location: "School Hall", createdBy: adminUser.id });
-    storage.createEvent({ schoolId: sid, title: "Inter-House Sports", description: "Annual inter-house sports competition", eventDate: "2026-04-25", eventTime: "08:00", location: "School Field", createdBy: adminUser.id });
-    storage.createEvent({ schoolId: sid, title: "Science Fair", description: "Exhibition of student science projects", eventDate: "2026-05-15", eventTime: "09:00", location: "Science Lab", createdBy: adminUser.id });
-    storage.createEvent({ schoolId: sid, title: "Cultural Day", description: "Celebration of Nigerian cultural diversity", eventDate: "2026-05-28", eventTime: "10:00", location: "School Hall", createdBy: adminUser.id });
-    storage.createEvent({ schoolId: sid, title: "Graduation Ceremony", description: "SS3 graduation ceremony", eventDate: "2026-07-15", eventTime: "11:00", location: "School Hall", createdBy: adminUser.id });
+    await storage.createEvent({ schoolId: sid, title: "PTA Meeting", description: "General PTA meeting for all parents", eventDate: "2026-04-10", eventTime: "10:00", location: "School Hall", createdBy: adminUser.id });
+    await storage.createEvent({ schoolId: sid, title: "Inter-House Sports", description: "Annual inter-house sports competition", eventDate: "2026-04-25", eventTime: "08:00", location: "School Field", createdBy: adminUser.id });
+    await storage.createEvent({ schoolId: sid, title: "Science Fair", description: "Exhibition of student science projects", eventDate: "2026-05-15", eventTime: "09:00", location: "Science Lab", createdBy: adminUser.id });
+    await storage.createEvent({ schoolId: sid, title: "Cultural Day", description: "Celebration of Nigerian cultural diversity", eventDate: "2026-05-28", eventTime: "10:00", location: "School Hall", createdBy: adminUser.id });
+    await storage.createEvent({ schoolId: sid, title: "Graduation Ceremony", description: "SS3 graduation ceremony", eventDate: "2026-07-15", eventTime: "11:00", location: "School Hall", createdBy: adminUser.id });
 
     // Asset categories
     const assetCats = ["Furniture", "Electronics", "Lab Equipment", "Vehicles", "Books"];
     const assetCatMap: Record<string, number> = {};
     for (const ac of assetCats) {
-      const cat = storage.createAssetCategory({ schoolId: sid, name: ac, description: `${ac} assets` });
+      const cat = await storage.createAssetCategory({ schoolId: sid, name: ac, description: `${ac} assets` });
       assetCatMap[ac] = cat.id;
     }
 
@@ -271,7 +271,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     ];
     const createdAssets: number[] = [];
     for (const a of assetData) {
-      const asset = storage.createAsset({
+      const asset = await storage.createAsset({
         schoolId: sid, assetTag: a.tag, name: a.name, categoryId: assetCatMap[a.cat],
         location: a.loc, condition: a.cond, purchasePrice: a.price, status: "active",
       });
@@ -279,9 +279,9 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     }
 
     // Maintenance logs
-    storage.createMaintenanceLog({ assetId: createdAssets[3], schoolId: sid, maintenanceType: "Repair", description: "Replaced faulty hard drives on 5 systems", cost: "75000", performedBy: "TechVille Solutions", performedDate: "2026-03-01", nextDueDate: "2026-09-01" });
-    storage.createMaintenanceLog({ assetId: createdAssets[10], schoolId: sid, maintenanceType: "Servicing", description: "Full engine service and oil change", cost: "120000", performedBy: "AutoCare Nigeria", performedDate: "2026-02-15", nextDueDate: "2026-08-15" });
-    storage.createMaintenanceLog({ assetId: createdAssets[5], schoolId: sid, maintenanceType: "Repair", description: "Replaced toner cartridges", cost: "25000", performedBy: "PrintHub", performedDate: "2026-03-20" });
+    await storage.createMaintenanceLog({ assetId: createdAssets[3], schoolId: sid, maintenanceType: "Repair", description: "Replaced faulty hard drives on 5 systems", cost: "75000", performedBy: "TechVille Solutions", performedDate: "2026-03-01", nextDueDate: "2026-09-01" });
+    await storage.createMaintenanceLog({ assetId: createdAssets[10], schoolId: sid, maintenanceType: "Servicing", description: "Full engine service and oil change", cost: "120000", performedBy: "AutoCare Nigeria", performedDate: "2026-02-15", nextDueDate: "2026-08-15" });
+    await storage.createMaintenanceLog({ assetId: createdAssets[5], schoolId: sid, maintenanceType: "Repair", description: "Replaced toner cartridges", cost: "25000", performedBy: "PrintHub", performedDate: "2026-03-20" });
 
     // Timetable slots (sample for JSS1A)
     const jss1Id = classMap["JSS1A"];
@@ -308,7 +308,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       { day: 5, period: 4, sub: "MTH", start: "10:10", end: "10:50" },
     ];
     for (const p of periods) {
-      storage.createTimetableSlot({
+      await storage.createTimetableSlot({
         schoolId: sid, classId: jss1Id, subjectId: subjectMap[p.sub],
         dayOfWeek: p.day, period: p.period, startTime: p.start, endTime: p.end, room: "Room 1",
       });
@@ -319,284 +319,284 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
   });
 
   // ── School Routes ──
-  app.get("/api/school", requireAuth, (req, res) => {
+  app.get("/api/school", requireAuth, async (req, res) => {
     const user = req.user as any;
     if (!user.schoolId) return res.json(null);
-    res.json(storage.getSchool(user.schoolId));
+    res.json(await storage.getSchool(user.schoolId));
   });
 
-  app.patch("/api/school", requireRole("school_admin", "super_admin"), (req, res) => {
+  app.patch("/api/school", requireRole("school_admin", "super_admin"), async (req, res) => {
     const user = req.user as any;
-    const updated = storage.updateSchool(user.schoolId, req.body);
+    const updated = await storage.updateSchool(user.schoolId, req.body);
     res.json(updated);
   });
 
   // ── User Management ──
-  app.get("/api/users", requireAuth, (req, res) => {
+  app.get("/api/users", requireAuth, async (req, res) => {
     const user = req.user as any;
-    const allUsers = storage.getUsersBySchool(user.schoolId);
+    const allUsers = await storage.getUsersBySchool(user.schoolId);
     res.json(allUsers.map(u => { const { password, ...s } = u; return s; }));
   });
 
-  app.post("/api/users", requireRole("school_admin", "super_admin"), (req, res) => {
+  app.post("/api/users", requireRole("school_admin", "super_admin"), async (req, res) => {
     const user = req.user as any;
     const { password, ...rest } = req.body;
-    const newUser = storage.createUser({ ...rest, schoolId: user.schoolId, password: hashPassword(password || "password123") });
+    const newUser = await storage.createUser({ ...rest, schoolId: user.schoolId, password: hashPassword(password || "password123") });
     const { password: _, ...safe } = newUser;
     res.json(safe);
   });
 
-  app.patch("/api/users/:id", requireRole("school_admin", "super_admin"), (req, res) => {
+  app.patch("/api/users/:id", requireRole("school_admin", "super_admin"), async (req, res) => {
     const data = { ...req.body };
     if (data.password) data.password = hashPassword(data.password);
-    const updated = storage.updateUser(Number(req.params.id), data);
+    const updated = await storage.updateUser(Number(req.params.id), data);
     if (!updated) return res.status(404).json({ message: "User not found" });
     const { password, ...safe } = updated;
     res.json(safe);
   });
 
-  app.delete("/api/users/:id", requireRole("school_admin", "super_admin"), (req, res) => {
-    storage.deleteUser(Number(req.params.id));
+  app.delete("/api/users/:id", requireRole("school_admin", "super_admin"), async (req, res) => {
+    await storage.deleteUser(Number(req.params.id));
     res.json({ ok: true });
   });
 
   // ── Dashboard ──
-  app.get("/api/dashboard", requireAuth, (req, res) => {
+  app.get("/api/dashboard", requireAuth, async (req, res) => {
     const user = req.user as any;
-    res.json(storage.getDashboardStats(user.schoolId));
+    res.json(await storage.getDashboardStats(user.schoolId));
   });
 
   // ── EduTrack: Students ──
-  app.get("/api/students", requireAuth, (req, res) => {
+  app.get("/api/students", requireAuth, async (req, res) => {
     const user = req.user as any;
-    res.json(storage.getStudentsBySchool(user.schoolId));
+    res.json(await storage.getStudentsBySchool(user.schoolId));
   });
-  app.post("/api/students", requireAuth, (req, res) => {
+  app.post("/api/students", requireAuth, async (req, res) => {
     const user = req.user as any;
-    res.json(storage.createStudent({ ...req.body, schoolId: user.schoolId }));
+    res.json(await storage.createStudent({ ...req.body, schoolId: user.schoolId }));
   });
-  app.patch("/api/students/:id", requireAuth, (req, res) => {
-    const updated = storage.updateStudent(Number(req.params.id), req.body);
+  app.patch("/api/students/:id", requireAuth, async (req, res) => {
+    const updated = await storage.updateStudent(Number(req.params.id), req.body);
     res.json(updated);
   });
-  app.delete("/api/students/:id", requireAuth, (req, res) => {
-    storage.deleteStudent(Number(req.params.id));
+  app.delete("/api/students/:id", requireAuth, async (req, res) => {
+    await storage.deleteStudent(Number(req.params.id));
     res.json({ ok: true });
   });
-  app.get("/api/students/:id", requireAuth, (req, res) => {
+  app.get("/api/students/:id", requireAuth, async (req, res) => {
     const id = Number(req.params.id);
-    const student = storage.getStudent(id);
+    const student = await storage.getStudent(id);
     if (!student) return res.status(404).json({ error: "Not found" });
     res.json({
       ...student,
-      guardians: storage.getGuardiansByStudent(id),
-      classHistory: storage.getClassHistoryByStudent(id),
+      guardians: await storage.getGuardiansByStudent(id),
+      classHistory: await storage.getClassHistoryByStudent(id),
     });
   });
 
   // ── Student Records: Guardians ──
-  app.get("/api/students/:id/guardians", requireAuth, (req, res) => {
-    res.json(storage.getGuardiansByStudent(Number(req.params.id)));
+  app.get("/api/students/:id/guardians", requireAuth, async (req, res) => {
+    res.json(await storage.getGuardiansByStudent(Number(req.params.id)));
   });
-  app.post("/api/students/:id/guardians", requireAuth, (req, res) => {
+  app.post("/api/students/:id/guardians", requireAuth, async (req, res) => {
     const user = req.user as any;
-    res.json(storage.createGuardian({ ...req.body, studentId: Number(req.params.id), schoolId: user.schoolId }));
+    res.json(await storage.createGuardian({ ...req.body, studentId: Number(req.params.id), schoolId: user.schoolId }));
   });
-  app.delete("/api/guardians/:id", requireAuth, (req, res) => {
-    storage.deleteGuardian(Number(req.params.id));
+  app.delete("/api/guardians/:id", requireAuth, async (req, res) => {
+    await storage.deleteGuardian(Number(req.params.id));
     res.json({ ok: true });
   });
 
   // ── Student Records: Class History ──
-  app.get("/api/students/:id/history", requireAuth, (req, res) => {
-    res.json(storage.getClassHistoryByStudent(Number(req.params.id)));
+  app.get("/api/students/:id/history", requireAuth, async (req, res) => {
+    res.json(await storage.getClassHistoryByStudent(Number(req.params.id)));
   });
-  app.post("/api/students/:id/history", requireAuth, (req, res) => {
+  app.post("/api/students/:id/history", requireAuth, async (req, res) => {
     const user = req.user as any;
-    res.json(storage.createClassHistory({ ...req.body, studentId: Number(req.params.id), schoolId: user.schoolId }));
+    res.json(await storage.createClassHistory({ ...req.body, studentId: Number(req.params.id), schoolId: user.schoolId }));
   });
-  app.delete("/api/history/:id", requireAuth, (req, res) => {
-    storage.deleteClassHistory(Number(req.params.id));
+  app.delete("/api/history/:id", requireAuth, async (req, res) => {
+    await storage.deleteClassHistory(Number(req.params.id));
     res.json({ ok: true });
   });
 
   // ── EduTrack: Attendance ──
-  app.get("/api/attendance", requireAuth, (req, res) => {
+  app.get("/api/attendance", requireAuth, async (req, res) => {
     const user = req.user as any;
     const date = (req.query.date as string) || new Date().toISOString().split("T")[0];
-    res.json(storage.getAttendanceByDate(user.schoolId, date));
+    res.json(await storage.getAttendanceByDate(user.schoolId, date));
   });
-  app.post("/api/attendance", requireAuth, (req, res) => {
+  app.post("/api/attendance", requireAuth, async (req, res) => {
     const user = req.user as any;
     const records = req.body.records;
     if (Array.isArray(records)) {
-      storage.createManyAttendance(records.map((r: any) => ({ ...r, schoolId: user.schoolId, markedBy: user.id })));
+      await storage.createManyAttendance(records.map((r: any) => ({ ...r, schoolId: user.schoolId, markedBy: user.id })));
       return res.json({ ok: true });
     }
-    res.json(storage.createAttendance({ ...req.body, schoolId: user.schoolId, markedBy: user.id }));
+    res.json(await storage.createAttendance({ ...req.body, schoolId: user.schoolId, markedBy: user.id }));
   });
 
   // ── EduTrack: Visits ──
-  app.get("/api/visits", requireAuth, (req, res) => {
+  app.get("/api/visits", requireAuth, async (req, res) => {
     const user = req.user as any;
-    res.json(storage.getVisitsBySchool(user.schoolId));
+    res.json(await storage.getVisitsBySchool(user.schoolId));
   });
-  app.post("/api/visits", requireAuth, (req, res) => {
+  app.post("/api/visits", requireAuth, async (req, res) => {
     const user = req.user as any;
-    res.json(storage.createVisit({ ...req.body, schoolId: user.schoolId }));
+    res.json(await storage.createVisit({ ...req.body, schoolId: user.schoolId }));
   });
-  app.patch("/api/visits/:id", requireAuth, (req, res) => {
-    const updated = storage.updateVisit(Number(req.params.id), req.body);
+  app.patch("/api/visits/:id", requireAuth, async (req, res) => {
+    const updated = await storage.updateVisit(Number(req.params.id), req.body);
     res.json(updated);
   });
 
   // ── TimeGrid: Subjects ──
-  app.get("/api/subjects", requireAuth, (req, res) => {
+  app.get("/api/subjects", requireAuth, async (req, res) => {
     const user = req.user as any;
-    res.json(storage.getSubjectsBySchool(user.schoolId));
+    res.json(await storage.getSubjectsBySchool(user.schoolId));
   });
-  app.post("/api/subjects", requireAuth, (req, res) => {
+  app.post("/api/subjects", requireAuth, async (req, res) => {
     const user = req.user as any;
-    res.json(storage.createSubject({ ...req.body, schoolId: user.schoolId }));
+    res.json(await storage.createSubject({ ...req.body, schoolId: user.schoolId }));
   });
-  app.delete("/api/subjects/:id", requireAuth, (req, res) => {
-    storage.deleteSubject(Number(req.params.id));
+  app.delete("/api/subjects/:id", requireAuth, async (req, res) => {
+    await storage.deleteSubject(Number(req.params.id));
     res.json({ ok: true });
   });
 
   // ── TimeGrid: Classes ──
-  app.get("/api/classes", requireAuth, (req, res) => {
+  app.get("/api/classes", requireAuth, async (req, res) => {
     const user = req.user as any;
-    res.json(storage.getClassesBySchool(user.schoolId));
+    res.json(await storage.getClassesBySchool(user.schoolId));
   });
-  app.post("/api/classes", requireAuth, (req, res) => {
+  app.post("/api/classes", requireAuth, async (req, res) => {
     const user = req.user as any;
-    res.json(storage.createClass({ ...req.body, schoolId: user.schoolId }));
+    res.json(await storage.createClass({ ...req.body, schoolId: user.schoolId }));
   });
-  app.delete("/api/classes/:id", requireAuth, (req, res) => {
-    storage.deleteClass(Number(req.params.id));
+  app.delete("/api/classes/:id", requireAuth, async (req, res) => {
+    await storage.deleteClass(Number(req.params.id));
     res.json({ ok: true });
   });
 
   // ── TimeGrid: Timetable ──
-  app.get("/api/timetable", requireAuth, (req, res) => {
+  app.get("/api/timetable", requireAuth, async (req, res) => {
     const user = req.user as any;
     const classId = req.query.classId ? Number(req.query.classId) : null;
-    if (classId) return res.json(storage.getTimetableByClass(user.schoolId, classId));
-    res.json(storage.getTimetableBySchool(user.schoolId));
+    if (classId) return res.json(await storage.getTimetableByClass(user.schoolId, classId));
+    res.json(await storage.getTimetableBySchool(user.schoolId));
   });
-  app.post("/api/timetable", requireAuth, (req, res) => {
+  app.post("/api/timetable", requireAuth, async (req, res) => {
     const user = req.user as any;
-    res.json(storage.createTimetableSlot({ ...req.body, schoolId: user.schoolId }));
+    res.json(await storage.createTimetableSlot({ ...req.body, schoolId: user.schoolId }));
   });
 
   // ── VoicelessBox ──
-  app.get("/api/feedback-categories", requireAuth, (req, res) => {
+  app.get("/api/feedback-categories", requireAuth, async (req, res) => {
     const user = req.user as any;
-    res.json(storage.getFeedbackCategoriesBySchool(user.schoolId));
+    res.json(await storage.getFeedbackCategoriesBySchool(user.schoolId));
   });
-  app.post("/api/feedback-categories", requireAuth, (req, res) => {
+  app.post("/api/feedback-categories", requireAuth, async (req, res) => {
     const user = req.user as any;
-    res.json(storage.createFeedbackCategory({ ...req.body, schoolId: user.schoolId }));
+    res.json(await storage.createFeedbackCategory({ ...req.body, schoolId: user.schoolId }));
   });
-  app.get("/api/feedbacks", requireAuth, (req, res) => {
+  app.get("/api/feedbacks", requireAuth, async (req, res) => {
     const user = req.user as any;
-    res.json(storage.getFeedbacksBySchool(user.schoolId));
+    res.json(await storage.getFeedbacksBySchool(user.schoolId));
   });
-  app.post("/api/feedbacks", (req, res) => {
+  app.post("/api/feedbacks", async (req, res) => {
     const code = `VB-${Date.now().toString(36).toUpperCase()}`;
-    const fb = storage.createFeedback({ ...req.body, trackingCode: code });
+    const fb = await storage.createFeedback({ ...req.body, trackingCode: code });
     res.json(fb);
   });
-  app.patch("/api/feedbacks/:id", requireAuth, (req, res) => {
+  app.patch("/api/feedbacks/:id", requireAuth, async (req, res) => {
     const user = req.user as any;
     const data = { ...req.body };
     if (data.adminResponse) {
       data.respondedBy = user.id;
-      data.respondedAt = new Date().toISOString();
+      data.respondedAt = new Date();
     }
-    res.json(storage.updateFeedback(Number(req.params.id), data));
+    res.json(await storage.updateFeedback(Number(req.params.id), data));
   });
-  app.get("/api/feedbacks/track/:code", (req, res) => {
-    const fb = storage.getFeedbackByCode(req.params.code);
+  app.get("/api/feedbacks/track/:code", async (req, res) => {
+    const fb = await storage.getFeedbackByCode(req.params.code);
     if (!fb) return res.status(404).json({ message: "Not found" });
     res.json({ trackingCode: fb.trackingCode, status: fb.status, adminResponse: fb.adminResponse, createdAt: fb.createdAt });
   });
 
   // ── Parents Connect: Announcements ──
-  app.get("/api/announcements", requireAuth, (req, res) => {
+  app.get("/api/announcements", requireAuth, async (req, res) => {
     const user = req.user as any;
-    res.json(storage.getAnnouncementsBySchool(user.schoolId));
+    res.json(await storage.getAnnouncementsBySchool(user.schoolId));
   });
-  app.post("/api/announcements", requireAuth, (req, res) => {
+  app.post("/api/announcements", requireAuth, async (req, res) => {
     const user = req.user as any;
-    res.json(storage.createAnnouncement({ ...req.body, schoolId: user.schoolId, publishedBy: user.id }));
+    res.json(await storage.createAnnouncement({ ...req.body, schoolId: user.schoolId, publishedBy: user.id }));
   });
 
   // ── Parents Connect: Messages ──
-  app.get("/api/messages/inbox", requireAuth, (req, res) => {
+  app.get("/api/messages/inbox", requireAuth, async (req, res) => {
     const user = req.user as any;
-    res.json(storage.getInbox(user.id));
+    res.json(await storage.getInbox(user.id));
   });
-  app.get("/api/messages/sent", requireAuth, (req, res) => {
+  app.get("/api/messages/sent", requireAuth, async (req, res) => {
     const user = req.user as any;
-    res.json(storage.getSent(user.id));
+    res.json(await storage.getSent(user.id));
   });
-  app.post("/api/messages", requireAuth, (req, res) => {
+  app.post("/api/messages", requireAuth, async (req, res) => {
     const user = req.user as any;
-    res.json(storage.createMessage({ ...req.body, schoolId: user.schoolId, senderId: user.id }));
+    res.json(await storage.createMessage({ ...req.body, schoolId: user.schoolId, senderId: user.id }));
   });
-  app.patch("/api/messages/:id/read", requireAuth, (req, res) => {
-    storage.markMessageRead(Number(req.params.id));
+  app.patch("/api/messages/:id/read", requireAuth, async (req, res) => {
+    await storage.markMessageRead(Number(req.params.id));
     res.json({ ok: true });
   });
 
   // ── Parents Connect: Events ──
-  app.get("/api/events", requireAuth, (req, res) => {
+  app.get("/api/events", requireAuth, async (req, res) => {
     const user = req.user as any;
-    res.json(storage.getEventsBySchool(user.schoolId));
+    res.json(await storage.getEventsBySchool(user.schoolId));
   });
-  app.post("/api/events", requireAuth, (req, res) => {
+  app.post("/api/events", requireAuth, async (req, res) => {
     const user = req.user as any;
-    res.json(storage.createEvent({ ...req.body, schoolId: user.schoolId, createdBy: user.id }));
+    res.json(await storage.createEvent({ ...req.body, schoolId: user.schoolId, createdBy: user.id }));
   });
 
   // ── Asset Register ──
-  app.get("/api/asset-categories", requireAuth, (req, res) => {
+  app.get("/api/asset-categories", requireAuth, async (req, res) => {
     const user = req.user as any;
-    res.json(storage.getAssetCategoriesBySchool(user.schoolId));
+    res.json(await storage.getAssetCategoriesBySchool(user.schoolId));
   });
-  app.post("/api/asset-categories", requireAuth, (req, res) => {
+  app.post("/api/asset-categories", requireAuth, async (req, res) => {
     const user = req.user as any;
-    res.json(storage.createAssetCategory({ ...req.body, schoolId: user.schoolId }));
+    res.json(await storage.createAssetCategory({ ...req.body, schoolId: user.schoolId }));
   });
-  app.get("/api/assets", requireAuth, (req, res) => {
+  app.get("/api/assets", requireAuth, async (req, res) => {
     const user = req.user as any;
-    res.json(storage.getAssetsBySchool(user.schoolId));
+    res.json(await storage.getAssetsBySchool(user.schoolId));
   });
-  app.get("/api/assets/:id", requireAuth, (req, res) => {
-    const a = storage.getAsset(Number(req.params.id));
+  app.get("/api/assets/:id", requireAuth, async (req, res) => {
+    const a = await storage.getAsset(Number(req.params.id));
     if (!a) return res.status(404).json({ message: "Not found" });
     res.json(a);
   });
-  app.post("/api/assets", requireAuth, (req, res) => {
+  app.post("/api/assets", requireAuth, async (req, res) => {
     const user = req.user as any;
-    res.json(storage.createAsset({ ...req.body, schoolId: user.schoolId }));
+    res.json(await storage.createAsset({ ...req.body, schoolId: user.schoolId }));
   });
-  app.patch("/api/assets/:id", requireAuth, (req, res) => {
-    res.json(storage.updateAsset(Number(req.params.id), req.body));
+  app.patch("/api/assets/:id", requireAuth, async (req, res) => {
+    res.json(await storage.updateAsset(Number(req.params.id), req.body));
   });
-  app.delete("/api/assets/:id", requireAuth, (req, res) => {
-    storage.deleteAsset(Number(req.params.id));
+  app.delete("/api/assets/:id", requireAuth, async (req, res) => {
+    await storage.deleteAsset(Number(req.params.id));
     res.json({ ok: true });
   });
-  app.get("/api/maintenance", requireAuth, (req, res) => {
+  app.get("/api/maintenance", requireAuth, async (req, res) => {
     const user = req.user as any;
-    res.json(storage.getMaintenanceBySchool(user.schoolId));
+    res.json(await storage.getMaintenanceBySchool(user.schoolId));
   });
-  app.post("/api/maintenance", requireAuth, (req, res) => {
+  app.post("/api/maintenance", requireAuth, async (req, res) => {
     const user = req.user as any;
-    res.json(storage.createMaintenanceLog({ ...req.body, schoolId: user.schoolId }));
+    res.json(await storage.createMaintenanceLog({ ...req.body, schoolId: user.schoolId }));
   });
 
   return httpServer;

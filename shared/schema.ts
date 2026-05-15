@@ -1,11 +1,11 @@
-import { sqliteTable, text, integer } from "drizzle-orm/sqlite-core";
+import { pgTable, text, integer, serial, boolean, timestamp, jsonb } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
 // ── Core Tables ──
 
-export const schools = sqliteTable("schools", {
-  id: integer("id").primaryKey({ autoIncrement: true }),
+export const schools = pgTable("schools", {
+  id: serial("id").primaryKey(),
   name: text("name").notNull(),
   code: text("code").notNull().unique(),
   address: text("address"),
@@ -18,26 +18,26 @@ export const schools = sqliteTable("schools", {
   trialEndsAt: text("trial_ends_at"),
   maxStudents: integer("max_students").notNull().default(50),
   maxTeachers: integer("max_teachers").notNull().default(10),
-  createdAt: text("created_at").notNull().default(""),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
-export const users = sqliteTable("users", {
-  id: integer("id").primaryKey({ autoIncrement: true }),
+export const users = pgTable("users", {
+  id: serial("id").primaryKey(),
   schoolId: integer("school_id").references(() => schools.id),
   username: text("username").notNull().unique(),
   password: text("password").notNull(),
   email: text("email"),
   fullName: text("full_name").notNull(),
   role: text("role").notNull().default("teacher"),
-  isActive: integer("is_active", { mode: "boolean" }).notNull().default(true),
-  lastLogin: text("last_login"),
-  createdAt: text("created_at").notNull().default(""),
+  isActive: boolean("is_active").notNull().default(true),
+  lastLogin: timestamp("last_login", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
 // ── EduTrack ──
 
-export const students = sqliteTable("students", {
-  id: integer("id").primaryKey({ autoIncrement: true }),
+export const students = pgTable("students", {
+  id: serial("id").primaryKey(),
   schoolId: integer("school_id").references(() => schools.id),
   admissionNumber: text("admission_number").notNull(),
   firstName: text("first_name").notNull(),
@@ -52,23 +52,23 @@ export const students = sqliteTable("students", {
   address: text("address"),
   bloodGroup: text("blood_group"),
   genotype: text("genotype"),
-  isActive: integer("is_active", { mode: "boolean" }).notNull().default(true),
-  createdAt: text("created_at").notNull().default(""),
+  isActive: boolean("is_active").notNull().default(true),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
-export const attendance = sqliteTable("attendance", {
-  id: integer("id").primaryKey({ autoIncrement: true }),
+export const attendance = pgTable("attendance", {
+  id: serial("id").primaryKey(),
   schoolId: integer("school_id").references(() => schools.id),
   studentId: integer("student_id").references(() => students.id),
   date: text("date").notNull(),
   status: text("status").notNull().default("present"),
   markedBy: integer("marked_by").references(() => users.id),
   notes: text("notes"),
-  createdAt: text("created_at").notNull().default(""),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
-export const schoolVisits = sqliteTable("school_visits", {
-  id: integer("id").primaryKey({ autoIncrement: true }),
+export const schoolVisits = pgTable("school_visits", {
+  id: serial("id").primaryKey(),
   schoolId: integer("school_id").references(() => schools.id),
   visitorName: text("visitor_name").notNull(),
   visitorPhone: text("visitor_phone"),
@@ -77,11 +77,11 @@ export const schoolVisits = sqliteTable("school_visits", {
   checkIn: text("check_in").notNull(),
   checkOut: text("check_out"),
   notes: text("notes"),
-  createdAt: text("created_at").notNull().default(""),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
-export const guardians = sqliteTable("guardians", {
-  id: integer("id").primaryKey({ autoIncrement: true }),
+export const guardians = pgTable("guardians", {
+  id: serial("id").primaryKey(),
   schoolId: integer("school_id").references(() => schools.id),
   studentId: integer("student_id").notNull().references(() => students.id, { onDelete: "cascade" }),
   name: text("name").notNull(),
@@ -90,12 +90,12 @@ export const guardians = sqliteTable("guardians", {
   relationship: text("relationship").notNull(),
   occupation: text("occupation"),
   address: text("address"),
-  isPrimary: integer("is_primary", { mode: "boolean" }).notNull().default(false),
-  createdAt: text("created_at").notNull().default(""),
+  isPrimary: boolean("is_primary").notNull().default(false),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
-export const classHistory = sqliteTable("class_history", {
-  id: integer("id").primaryKey({ autoIncrement: true }),
+export const classHistory = pgTable("class_history", {
+  id: serial("id").primaryKey(),
   schoolId: integer("school_id").references(() => schools.id),
   studentId: integer("student_id").notNull().references(() => students.id, { onDelete: "cascade" }),
   className: text("class_name").notNull(),
@@ -103,39 +103,39 @@ export const classHistory = sqliteTable("class_history", {
   result: text("result").notNull(),
   position: text("position"),
   remarks: text("remarks"),
-  createdAt: text("created_at").notNull().default(""),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
 // ── TimeGrid ──
 
-export const subjects = sqliteTable("subjects", {
-  id: integer("id").primaryKey({ autoIncrement: true }),
+export const subjects = pgTable("subjects", {
+  id: serial("id").primaryKey(),
   schoolId: integer("school_id").references(() => schools.id),
   name: text("name").notNull(),
   code: text("code"),
   colorCode: text("color_code"),
-  createdAt: text("created_at").notNull().default(""),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
-export const classes = sqliteTable("classes", {
-  id: integer("id").primaryKey({ autoIncrement: true }),
+export const classes = pgTable("classes", {
+  id: serial("id").primaryKey(),
   schoolId: integer("school_id").references(() => schools.id),
   name: text("name").notNull(),
   level: text("level"),
   section: text("section"),
-  createdAt: text("created_at").notNull().default(""),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
-export const teacherSubjects = sqliteTable("teacher_subjects", {
-  id: integer("id").primaryKey({ autoIncrement: true }),
+export const teacherSubjects = pgTable("teacher_subjects", {
+  id: serial("id").primaryKey(),
   schoolId: integer("school_id").references(() => schools.id),
   teacherId: integer("teacher_id").references(() => users.id),
   subjectId: integer("subject_id").references(() => subjects.id),
   classId: integer("class_id").references(() => classes.id),
 });
 
-export const timetableSlots = sqliteTable("timetable_slots", {
-  id: integer("id").primaryKey({ autoIncrement: true }),
+export const timetableSlots = pgTable("timetable_slots", {
+  id: serial("id").primaryKey(),
   schoolId: integer("school_id").references(() => schools.id),
   classId: integer("class_id").references(() => classes.id),
   subjectId: integer("subject_id").references(() => subjects.id),
@@ -145,39 +145,39 @@ export const timetableSlots = sqliteTable("timetable_slots", {
   startTime: text("start_time"),
   endTime: text("end_time"),
   room: text("room"),
-  createdAt: text("created_at").notNull().default(""),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
 // ── VoicelessBox ──
 
-export const feedbackCategories = sqliteTable("feedback_categories", {
-  id: integer("id").primaryKey({ autoIncrement: true }),
+export const feedbackCategories = pgTable("feedback_categories", {
+  id: serial("id").primaryKey(),
   schoolId: integer("school_id").references(() => schools.id),
   name: text("name").notNull(),
   description: text("description"),
-  createdAt: text("created_at").notNull().default(""),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
-export const feedbacks = sqliteTable("feedbacks", {
-  id: integer("id").primaryKey({ autoIncrement: true }),
+export const feedbacks = pgTable("feedbacks", {
+  id: serial("id").primaryKey(),
   schoolId: integer("school_id").references(() => schools.id),
   trackingCode: text("tracking_code").notNull().unique(),
   categoryId: integer("category_id").references(() => feedbackCategories.id),
   message: text("message").notNull(),
   status: text("status").notNull().default("new"),
   priority: text("priority").notNull().default("medium"),
-  isAnonymous: integer("is_anonymous", { mode: "boolean" }).notNull().default(true),
+  isAnonymous: boolean("is_anonymous").notNull().default(true),
   submittedBy: text("submitted_by"),
   adminResponse: text("admin_response"),
   respondedBy: integer("responded_by").references(() => users.id),
-  respondedAt: text("responded_at"),
-  createdAt: text("created_at").notNull().default(""),
+  respondedAt: timestamp("responded_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
 // ── Parents Connect ──
 
-export const announcements = sqliteTable("announcements", {
-  id: integer("id").primaryKey({ autoIncrement: true }),
+export const announcements = pgTable("announcements", {
+  id: serial("id").primaryKey(),
   schoolId: integer("school_id").references(() => schools.id),
   title: text("title").notNull(),
   content: text("content").notNull(),
@@ -185,23 +185,23 @@ export const announcements = sqliteTable("announcements", {
   targetClass: text("target_class"),
   priority: text("priority").notNull().default("normal"),
   publishedBy: integer("published_by").references(() => users.id),
-  isPublished: integer("is_published", { mode: "boolean" }).notNull().default(false),
-  createdAt: text("created_at").notNull().default(""),
+  isPublished: boolean("is_published").notNull().default(false),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
-export const messages = sqliteTable("messages", {
-  id: integer("id").primaryKey({ autoIncrement: true }),
+export const messages = pgTable("messages", {
+  id: serial("id").primaryKey(),
   schoolId: integer("school_id").references(() => schools.id),
   senderId: integer("sender_id").references(() => users.id),
   receiverId: integer("receiver_id").references(() => users.id),
   subject: text("subject").notNull(),
   content: text("content").notNull(),
-  isRead: integer("is_read", { mode: "boolean" }).notNull().default(false),
-  createdAt: text("created_at").notNull().default(""),
+  isRead: boolean("is_read").notNull().default(false),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
-export const events = sqliteTable("events", {
-  id: integer("id").primaryKey({ autoIncrement: true }),
+export const events = pgTable("events", {
+  id: serial("id").primaryKey(),
   schoolId: integer("school_id").references(() => schools.id),
   title: text("title").notNull(),
   description: text("description"),
@@ -209,21 +209,21 @@ export const events = sqliteTable("events", {
   eventTime: text("event_time"),
   location: text("location"),
   createdBy: integer("created_by").references(() => users.id),
-  createdAt: text("created_at").notNull().default(""),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
 // ── Asset Register ──
 
-export const assetCategories = sqliteTable("asset_categories", {
-  id: integer("id").primaryKey({ autoIncrement: true }),
+export const assetCategories = pgTable("asset_categories", {
+  id: serial("id").primaryKey(),
   schoolId: integer("school_id").references(() => schools.id),
   name: text("name").notNull(),
   description: text("description"),
-  createdAt: text("created_at").notNull().default(""),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
-export const assets = sqliteTable("assets", {
-  id: integer("id").primaryKey({ autoIncrement: true }),
+export const assets = pgTable("assets", {
+  id: serial("id").primaryKey(),
   schoolId: integer("school_id").references(() => schools.id),
   assetTag: text("asset_tag").notNull(),
   name: text("name").notNull(),
@@ -239,12 +239,12 @@ export const assets = sqliteTable("assets", {
   assignedTo: text("assigned_to"),
   status: text("status").notNull().default("active"),
   notes: text("notes"),
-  createdAt: text("created_at").notNull().default(""),
-  updatedAt: text("updated_at"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }),
 });
 
-export const assetMaintenanceLogs = sqliteTable("asset_maintenance_logs", {
-  id: integer("id").primaryKey({ autoIncrement: true }),
+export const assetMaintenanceLogs = pgTable("asset_maintenance_logs", {
+  id: serial("id").primaryKey(),
   assetId: integer("asset_id").references(() => assets.id),
   schoolId: integer("school_id").references(() => schools.id),
   maintenanceType: text("maintenance_type").notNull(),
@@ -253,30 +253,30 @@ export const assetMaintenanceLogs = sqliteTable("asset_maintenance_logs", {
   performedBy: text("performed_by"),
   performedDate: text("performed_date"),
   nextDueDate: text("next_due_date"),
-  createdAt: text("created_at").notNull().default(""),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
 // ── Insert Schemas ──
 
-export const insertSchoolSchema = createInsertSchema(schools).omit({ id: true });
-export const insertUserSchema = createInsertSchema(users).omit({ id: true });
-export const insertStudentSchema = createInsertSchema(students).omit({ id: true });
-export const insertAttendanceSchema = createInsertSchema(attendance).omit({ id: true });
-export const insertGuardianSchema = createInsertSchema(guardians).omit({ id: true });
-export const insertClassHistorySchema = createInsertSchema(classHistory).omit({ id: true });
-export const insertSchoolVisitSchema = createInsertSchema(schoolVisits).omit({ id: true });
-export const insertSubjectSchema = createInsertSchema(subjects).omit({ id: true });
-export const insertClassSchema = createInsertSchema(classes).omit({ id: true });
+export const insertSchoolSchema = createInsertSchema(schools).omit({ id: true, createdAt: true });
+export const insertUserSchema = createInsertSchema(users).omit({ id: true, createdAt: true });
+export const insertStudentSchema = createInsertSchema(students).omit({ id: true, createdAt: true });
+export const insertAttendanceSchema = createInsertSchema(attendance).omit({ id: true, createdAt: true });
+export const insertGuardianSchema = createInsertSchema(guardians).omit({ id: true, createdAt: true });
+export const insertClassHistorySchema = createInsertSchema(classHistory).omit({ id: true, createdAt: true });
+export const insertSchoolVisitSchema = createInsertSchema(schoolVisits).omit({ id: true, createdAt: true });
+export const insertSubjectSchema = createInsertSchema(subjects).omit({ id: true, createdAt: true });
+export const insertClassSchema = createInsertSchema(classes).omit({ id: true, createdAt: true });
 export const insertTeacherSubjectSchema = createInsertSchema(teacherSubjects).omit({ id: true });
-export const insertTimetableSlotSchema = createInsertSchema(timetableSlots).omit({ id: true });
-export const insertFeedbackCategorySchema = createInsertSchema(feedbackCategories).omit({ id: true });
-export const insertFeedbackSchema = createInsertSchema(feedbacks).omit({ id: true });
-export const insertAnnouncementSchema = createInsertSchema(announcements).omit({ id: true });
-export const insertMessageSchema = createInsertSchema(messages).omit({ id: true });
-export const insertEventSchema = createInsertSchema(events).omit({ id: true });
-export const insertAssetCategorySchema = createInsertSchema(assetCategories).omit({ id: true });
-export const insertAssetSchema = createInsertSchema(assets).omit({ id: true });
-export const insertMaintenanceLogSchema = createInsertSchema(assetMaintenanceLogs).omit({ id: true });
+export const insertTimetableSlotSchema = createInsertSchema(timetableSlots).omit({ id: true, createdAt: true });
+export const insertFeedbackCategorySchema = createInsertSchema(feedbackCategories).omit({ id: true, createdAt: true });
+export const insertFeedbackSchema = createInsertSchema(feedbacks).omit({ id: true, createdAt: true });
+export const insertAnnouncementSchema = createInsertSchema(announcements).omit({ id: true, createdAt: true });
+export const insertMessageSchema = createInsertSchema(messages).omit({ id: true, createdAt: true });
+export const insertEventSchema = createInsertSchema(events).omit({ id: true, createdAt: true });
+export const insertAssetCategorySchema = createInsertSchema(assetCategories).omit({ id: true, createdAt: true });
+export const insertAssetSchema = createInsertSchema(assets).omit({ id: true, createdAt: true });
+export const insertMaintenanceLogSchema = createInsertSchema(assetMaintenanceLogs).omit({ id: true, createdAt: true });
 
 // ── Types ──
 
