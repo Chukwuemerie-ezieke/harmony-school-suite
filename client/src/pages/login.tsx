@@ -90,9 +90,9 @@ export default function LoginPage() {
 
             <div className="mt-4 p-3 rounded-md bg-muted text-xs text-muted-foreground space-y-1">
               <p className="font-medium">Demo Credentials:</p>
-              <p>Admin: admin / admin123</p>
-              <p>Teacher: teacher / teacher123</p>
-              <p>Parent: parent / parent123</p>
+              <p>Admin: demo_admin / admin123</p>
+              <p>Teacher: demo_teacher / teacher123</p>
+              <p>Parent: demo_parent / parent123</p>
             </div>
           </CardContent>
         </Card>

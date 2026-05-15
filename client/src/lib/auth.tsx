@@ -60,7 +60,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const loadDemo = async () => {
     const res = await apiRequest("POST", "/api/school/demo");
     const data = await res.json();
-    await login("admin", "admin123");
+    await login("demo_admin", "admin123");
   };
 
   return (
