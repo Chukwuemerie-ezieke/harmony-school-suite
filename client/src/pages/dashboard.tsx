@@ -104,7 +104,7 @@ export default function DashboardPage() {
             {[
               { label: "EduPlanner", desc: "Role-based educator task planner", icon: ClipboardList, color: "text-indigo-600 dark:text-indigo-400", bg: "bg-indigo-50 dark:bg-indigo-950", href: "https://chukwuemerie-ezieke.github.io/eduplanner/", live: true },
               { label: "Career Guidance", desc: "SS3 university & JAMB recommendations", icon: Compass, color: "text-teal-600 dark:text-teal-400", bg: "bg-teal-50 dark:bg-teal-950", href: "https://harmony-career-guidance.vercel.app", live: true },
-              { label: "Student Records", desc: "Full digital student registry", icon: FileText, color: "text-slate-600 dark:text-slate-400", bg: "bg-slate-100 dark:bg-slate-800", live: false },
+              { label: "Student Records", desc: "Full registry: guardians, class history", icon: FileText, color: "text-violet-600 dark:text-violet-400", bg: "bg-violet-50 dark:bg-violet-950", href: "#/students", live: true, internal: true },
               { label: "Harmony CBT", desc: "Computer-based testing platform", icon: GradCap, color: "text-slate-600 dark:text-slate-400", bg: "bg-slate-100 dark:bg-slate-800", live: false },
               { label: "ExamPrep", desc: "WAEC, NECO & JAMB preparation", icon: BookOpenCheck, color: "text-slate-600 dark:text-slate-400", bg: "bg-slate-100 dark:bg-slate-800", live: false },
             ].map((m) => {
@@ -127,6 +127,9 @@ export default function DashboardPage() {
                   </CardContent>
                 </Card>
               );
+              if (m.live && (m as any).internal) {
+                return <a key={m.label} href={m.href} className="block">{inner}</a>;
+              }
               return m.live ? (
                 <a key={m.label} href={m.href} target="_blank" rel="noopener noreferrer" className="block">{inner}</a>
               ) : (

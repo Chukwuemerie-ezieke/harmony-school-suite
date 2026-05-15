@@ -3,6 +3,8 @@ import {
   type School, type InsertSchool, schools,
   type Student, type InsertStudent, students,
   type Attendance, type InsertAttendance, attendance,
+  type Guardian, type InsertGuardian, guardians,
+  type ClassHistory, type InsertClassHistory, classHistory,
   type SchoolVisit, type InsertSchoolVisit, schoolVisits,
   type Subject, type InsertSubject, subjects,
   type Class, type InsertClass, classes,
@@ -84,6 +86,30 @@ sqlite.exec(`
     status TEXT NOT NULL DEFAULT 'present',
     marked_by INTEGER REFERENCES users(id),
     notes TEXT,
+    created_at TEXT NOT NULL DEFAULT ''
+  );
+  CREATE TABLE IF NOT EXISTS guardians (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    school_id INTEGER REFERENCES schools(id),
+    student_id INTEGER NOT NULL REFERENCES students(id) ON DELETE CASCADE,
+    name TEXT NOT NULL,
+    phone TEXT NOT NULL,
+    email TEXT,
+    relationship TEXT NOT NULL,
+    occupation TEXT,
+    address TEXT,
+    is_primary INTEGER NOT NULL DEFAULT 0,
+    created_at TEXT NOT NULL DEFAULT ''
+  );
+  CREATE TABLE IF NOT EXISTS class_history (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    school_id INTEGER REFERENCES schools(id),
+    student_id INTEGER NOT NULL REFERENCES students(id) ON DELETE CASCADE,
+    class_name TEXT NOT NULL,
+    session TEXT NOT NULL,
+    result TEXT NOT NULL,
+    position TEXT,
+    remarks TEXT,
     created_at TEXT NOT NULL DEFAULT ''
   );
   CREATE TABLE IF NOT EXISTS school_visits (
@@ -282,6 +308,31 @@ export class DatabaseStorage {
   }
   deleteStudent(id: number) {
     return db.delete(students).where(eq(students.id, id)).run();
+  }
+
+  // ── Guardians ──
+  getGuardiansByStudent(studentId: number): Guardian[] {
+    return db.select().from(guardians).where(eq(guardians.studentId, studentId)).all();
+  }
+  createGuardian(data: InsertGuardian): Guardian {
+    return db.insert(guardians).values({ ...data, createdAt: this.now() }).returning().get();
+  }
+  updateGuardian(id: number, data: Partial<InsertGuardian>): Guardian | undefined {
+    return db.update(guardians).set(data).where(eq(guardians.id, id)).returning().get();
+  }
+  deleteGuardian(id: number) {
+    return db.delete(guardians).where(eq(guardians.id, id)).run();
+  }
+
+  // ── Class History ──
+  getClassHistoryByStudent(studentId: number): ClassHistory[] {
+    return db.select().from(classHistory).where(eq(classHistory.studentId, studentId)).orderBy(desc(classHistory.session)).all();
+  }
+  createClassHistory(data: InsertClassHistory): ClassHistory {
+    return db.insert(classHistory).values({ ...data, createdAt: this.now() }).returning().get();
+  }
+  deleteClassHistory(id: number) {
+    return db.delete(classHistory).where(eq(classHistory.id, id)).run();
   }
 
   // ── Attendance ──

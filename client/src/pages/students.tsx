@@ -84,9 +84,9 @@ export default function StudentsPage() {
               </TableHeader>
               <TableBody>
                 {filtered.map((s: any) => (
-                  <TableRow key={s.id}>
+                  <TableRow key={s.id} className="cursor-pointer hover:bg-accent/50" onClick={() => (window.location.hash = `#/students/${s.id}`)} data-testid={`row-student-${s.id}`}>
                     <TableCell className="font-mono text-xs">{s.admissionNumber}</TableCell>
-                    <TableCell className="font-medium">{s.firstName} {s.lastName}</TableCell>
+                    <TableCell className="font-medium text-primary hover:underline">{s.firstName} {s.lastName}</TableCell>
                     <TableCell>{s.classLevel}{s.section}</TableCell>
                     <TableCell>{s.gender}</TableCell>
                     <TableCell>{s.bloodGroup} {s.genotype && `(${s.genotype})`}</TableCell>

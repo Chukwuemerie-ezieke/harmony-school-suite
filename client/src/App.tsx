@@ -9,6 +9,7 @@ import NotFound from "@/pages/not-found";
 import LoginPage from "@/pages/login";
 import DashboardPage from "@/pages/dashboard";
 import StudentsPage from "@/pages/students";
+import StudentProfilePage from "@/pages/student-profile";
 import AttendancePage from "@/pages/attendance";
 import VisitorsPage from "@/pages/visitors";
 import TimetablePage from "@/pages/timetable";
@@ -43,6 +44,7 @@ function AppRouter() {
     <Switch>
       <Route path="/" component={DashboardPage} />
       <Route path="/students" component={StudentsPage} />
+      <Route path="/students/:id" component={StudentProfilePage} />
       <Route path="/attendance" component={AttendancePage} />
       <Route path="/visitors" component={VisitorsPage} />
       <Route path="/timetable" component={TimetablePage} />

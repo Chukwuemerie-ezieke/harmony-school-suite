@@ -383,6 +383,42 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     storage.deleteStudent(Number(req.params.id));
     res.json({ ok: true });
   });
+  app.get("/api/students/:id", requireAuth, (req, res) => {
+    const id = Number(req.params.id);
+    const student = storage.getStudent(id);
+    if (!student) return res.status(404).json({ error: "Not found" });
+    res.json({
+      ...student,
+      guardians: storage.getGuardiansByStudent(id),
+      classHistory: storage.getClassHistoryByStudent(id),
+    });
+  });
+
+  // ── Student Records: Guardians ──
+  app.get("/api/students/:id/guardians", requireAuth, (req, res) => {
+    res.json(storage.getGuardiansByStudent(Number(req.params.id)));
+  });
+  app.post("/api/students/:id/guardians", requireAuth, (req, res) => {
+    const user = req.user as any;
+    res.json(storage.createGuardian({ ...req.body, studentId: Number(req.params.id), schoolId: user.schoolId }));
+  });
+  app.delete("/api/guardians/:id", requireAuth, (req, res) => {
+    storage.deleteGuardian(Number(req.params.id));
+    res.json({ ok: true });
+  });
+
+  // ── Student Records: Class History ──
+  app.get("/api/students/:id/history", requireAuth, (req, res) => {
+    res.json(storage.getClassHistoryByStudent(Number(req.params.id)));
+  });
+  app.post("/api/students/:id/history", requireAuth, (req, res) => {
+    const user = req.user as any;
+    res.json(storage.createClassHistory({ ...req.body, studentId: Number(req.params.id), schoolId: user.schoolId }));
+  });
+  app.delete("/api/history/:id", requireAuth, (req, res) => {
+    storage.deleteClassHistory(Number(req.params.id));
+    res.json({ ok: true });
+  });
 
   // ── EduTrack: Attendance ──
   app.get("/api/attendance", requireAuth, (req, res) => {

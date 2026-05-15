@@ -80,6 +80,32 @@ export const schoolVisits = sqliteTable("school_visits", {
   createdAt: text("created_at").notNull().default(""),
 });
 
+export const guardians = sqliteTable("guardians", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  schoolId: integer("school_id").references(() => schools.id),
+  studentId: integer("student_id").notNull().references(() => students.id, { onDelete: "cascade" }),
+  name: text("name").notNull(),
+  phone: text("phone").notNull(),
+  email: text("email"),
+  relationship: text("relationship").notNull(),
+  occupation: text("occupation"),
+  address: text("address"),
+  isPrimary: integer("is_primary", { mode: "boolean" }).notNull().default(false),
+  createdAt: text("created_at").notNull().default(""),
+});
+
+export const classHistory = sqliteTable("class_history", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  schoolId: integer("school_id").references(() => schools.id),
+  studentId: integer("student_id").notNull().references(() => students.id, { onDelete: "cascade" }),
+  className: text("class_name").notNull(),
+  session: text("session").notNull(),
+  result: text("result").notNull(),
+  position: text("position"),
+  remarks: text("remarks"),
+  createdAt: text("created_at").notNull().default(""),
+});
+
 // ── TimeGrid ──
 
 export const subjects = sqliteTable("subjects", {
@@ -236,6 +262,8 @@ export const insertSchoolSchema = createInsertSchema(schools).omit({ id: true })
 export const insertUserSchema = createInsertSchema(users).omit({ id: true });
 export const insertStudentSchema = createInsertSchema(students).omit({ id: true });
 export const insertAttendanceSchema = createInsertSchema(attendance).omit({ id: true });
+export const insertGuardianSchema = createInsertSchema(guardians).omit({ id: true });
+export const insertClassHistorySchema = createInsertSchema(classHistory).omit({ id: true });
 export const insertSchoolVisitSchema = createInsertSchema(schoolVisits).omit({ id: true });
 export const insertSubjectSchema = createInsertSchema(subjects).omit({ id: true });
 export const insertClassSchema = createInsertSchema(classes).omit({ id: true });
@@ -260,6 +288,10 @@ export type Student = typeof students.$inferSelect;
 export type InsertStudent = z.infer<typeof insertStudentSchema>;
 export type Attendance = typeof attendance.$inferSelect;
 export type InsertAttendance = z.infer<typeof insertAttendanceSchema>;
+export type Guardian = typeof guardians.$inferSelect;
+export type InsertGuardian = z.infer<typeof insertGuardianSchema>;
+export type ClassHistory = typeof classHistory.$inferSelect;
+export type InsertClassHistory = z.infer<typeof insertClassHistorySchema>;
 export type SchoolVisit = typeof schoolVisits.$inferSelect;
 export type InsertSchoolVisit = z.infer<typeof insertSchoolVisitSchema>;
 export type Subject = typeof subjects.$inferSelect;

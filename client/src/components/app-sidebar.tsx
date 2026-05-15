@@ -52,7 +52,7 @@ const navGroups = [
     label: "More Modules", items: [
       { label: "EduPlanner", path: "https://chukwuemerie-ezieke.github.io/eduplanner/", icon: ClipboardList, external: true },
       { label: "Career Guidance", path: "https://harmony-career-guidance.vercel.app", icon: Compass, external: true },
-      { label: "Student Records", path: "#", icon: FileText, soon: true },
+      { label: "Student Records", path: "/students", icon: FileText },
       { label: "Harmony CBT", path: "#", icon: GraduationCap, soon: true },
       { label: "ExamPrep", path: "#", icon: BookOpenCheck, soon: true },
     ]
