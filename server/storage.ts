@@ -18,7 +18,7 @@ import {
   type AssetCategory, type InsertAssetCategory, assetCategories,
   type Asset, type InsertAsset, assets,
   type MaintenanceLog, type InsertMaintenanceLog, assetMaintenanceLogs,
-} from "@shared/schema";
+} from "../shared/schema";
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 import { eq, and, desc, sql } from "drizzle-orm";
